@@ -1,0 +1,17 @@
+[project]
+name = "syncthing-merge"
+version = "0.1.0"
+description = "Merges all conflicts!"
+readme = "README.md"
+authors = [
+    { name = "alan", email = "alan@laptop-small" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+syncthing-merge = "syncthing_merge:main"
+
+[build-system]
+requires = ["uv_build>=0.11.19,<0.12.0"]
+build-backend = "uv_build"
