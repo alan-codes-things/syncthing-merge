@@ -45,9 +45,7 @@ def get_git_config(key):
     """Safely queries a git configuration key."""
     try:
         return subprocess.run(
-            ["git", "config", "--get", key],
-            capture_output=True,
-            text=True
+            ["git", "config", "--get", key], capture_output=True, text=True
         ).stdout.strip()
     except FileNotFoundError:
         return ""
@@ -78,7 +76,9 @@ def get_merge_command_template(tool_name, is_3way=True):
     Returns the command template for the given tool, prioritizing
     custom commands defined in the user's Git configuration.
     """
-    config_key = f"mergetool.{tool_name}.cmd" if is_3way else f"difftool.{tool_name}.cmd"
+    config_key = (
+        f"mergetool.{tool_name}.cmd" if is_3way else f"difftool.{tool_name}.cmd"
+    )
     custom_cmd = get_git_config(config_key)
     if custom_cmd:
         return custom_cmd
@@ -93,16 +93,20 @@ def run_visual_tool(cmd_template, base, current, conflict):
     Replaces placeholders in the command template and executes the merge tool.
     """
     # Normalize paths to use forward slashes for cross-platform compatibility
-    base_str = str(base).replace('\\', '/')
-    current_str = str(current).replace('\\', '/')
-    conflict_str = str(conflict).replace('\\', '/')
+    base_str = str(base).replace("\\", "/")
+    current_str = str(current).replace("\\", "/")
+    conflict_str = str(conflict).replace("\\", "/")
 
     cmd_str = cmd_template
     replacements = [
-        ("$BASE", base_str), ("%BASE%", base_str),
-        ("$LOCAL", current_str), ("%LOCAL%", current_str),
-        ("$REMOTE", conflict_str), ("%REMOTE%", conflict_str),
-        ("$MERGED", current_str), ("%MERGED%", current_str)
+        ("$BASE", base_str),
+        ("%BASE%", base_str),
+        ("$LOCAL", current_str),
+        ("%LOCAL%", current_str),
+        ("$REMOTE", conflict_str),
+        ("%REMOTE%", conflict_str),
+        ("$MERGED", current_str),
+        ("%MERGED%", current_str),
     ]
 
     # Replace both quoted and unquoted placeholders safely
@@ -121,7 +125,9 @@ def run_visual_tool(cmd_template, base, current, conflict):
         print(f"    [INFO] Visual tool process finished (exit code {e.returncode}).")
         return True
     except FileNotFoundError:
-        print("    [ERROR] Failed to execute visual tool. Verify it is in your system PATH.")
+        print(
+            "    [ERROR] Failed to execute visual tool. Verify it is in your system PATH."
+        )
         return False
 
 
@@ -142,7 +148,9 @@ def find_base_ancestor(sync_root, relative_dir, original_name, ext):
         return None
 
     name_without_ext = (
-        original_name[: -len(ext)] if ext and original_name.endswith(ext) else original_name
+        original_name[: -len(ext)]
+        if ext and original_name.endswith(ext)
+        else original_name
     )
     pattern = f"{name_without_ext}~*"
     if ext:
@@ -165,7 +173,14 @@ def run_git_empty_fallback(current_file, conflict_path):
 
     try:
         result = subprocess.run(
-            ["git", "merge-file", "-q", str(current_file), str(base_file), str(conflict_path)],
+            [
+                "git",
+                "merge-file",
+                "-q",
+                str(current_file),
+                str(base_file),
+                str(conflict_path),
+            ],
             capture_output=True,
             text=True,
         )
@@ -173,7 +188,9 @@ def run_git_empty_fallback(current_file, conflict_path):
             print(f"    [SUCCESS] Cleanly merged! Deleting conflict file.")
             conflict_path.unlink()
         elif result.returncode > 0:
-            print(f"    [CONFLICTS] Merged with conflict markers. Resolve manually inside '{current_file.name}'.")
+            print(
+                f"    [CONFLICTS] Merged with conflict markers. Resolve manually inside '{current_file.name}'."
+            )
         else:
             print(f"    [ERROR] Git merge-file failed: {result.stderr.strip()}")
     except FileNotFoundError:
@@ -205,7 +222,14 @@ def merge_conflict(sync_root, conflict_path, tool):
         try:
             # Try automatic silent git merge first
             result = subprocess.run(
-                ["git", "merge-file", "-q", str(current_file), str(base_file), str(conflict_path)],
+                [
+                    "git",
+                    "merge-file",
+                    "-q",
+                    str(current_file),
+                    str(base_file),
+                    str(conflict_path),
+                ],
                 capture_output=True,
                 text=True,
             )
@@ -214,19 +238,37 @@ def merge_conflict(sync_root, conflict_path, tool):
                 print(f"    [SUCCESS] Cleanly merged! Deleting conflict file.")
                 conflict_path.unlink()
             elif result.returncode > 0:
-                print(f"    [CONFLICTS] Automatic merge failed. Overlapping changes found.")
-                ans = input(f"    Would you like to open {tool.upper()} to resolve conflicts? (y/N): ").strip().lower()
-                if ans == 'y':
+                print(
+                    f"    [CONFLICTS] Automatic merge failed. Overlapping changes found."
+                )
+                ans = (
+                    input(
+                        f"    Would you like to open {tool.upper()} to resolve conflicts? (y/N): "
+                    )
+                    .strip()
+                    .lower()
+                )
+                if ans == "y":
                     cmd_template = get_merge_command_template(tool, is_3way=True)
                     if cmd_template:
-                        success = run_visual_tool(cmd_template, base_file, current_file, conflict_path)
+                        success = run_visual_tool(
+                            cmd_template, base_file, current_file, conflict_path
+                        )
                         if success:
-                            ans_del = input(f"    Did you successfully resolve the conflict? Delete '{conflict_path.name}'? (y/N): ").strip().lower()
-                            if ans_del == 'y':
+                            ans_del = (
+                                input(
+                                    f"    Did you successfully resolve the conflict? Delete '{conflict_path.name}'? (y/N): "
+                                )
+                                .strip()
+                                .lower()
+                            )
+                            if ans_del == "y":
                                 conflict_path.unlink()
                                 print("    [SUCCESS] Deleted conflict file.")
                     else:
-                        print(f"    [ERROR] No visual merge template command resolved for '{tool}'.")
+                        print(
+                            f"    [ERROR] No visual merge template command resolved for '{tool}'."
+                        )
             else:
                 print(f"    [ERROR] Git merge-file failed: {result.stderr.strip()}")
         except FileNotFoundError:
@@ -237,13 +279,21 @@ def merge_conflict(sync_root, conflict_path, tool):
         cmd_template = get_merge_command_template(tool, is_3way=False)
         tool_launched = False
         if cmd_template:
-            tool_launched = run_visual_tool(cmd_template, current_file, current_file, conflict_path)
+            tool_launched = run_visual_tool(
+                cmd_template, current_file, current_file, conflict_path
+            )
             if tool_launched:
-                ans_del = input(f"    Did you successfully resolve the conflict? Delete '{conflict_path.name}'? (y/N): ").strip().lower()
-                if ans_del == 'y':
+                ans_del = (
+                    input(
+                        f"    Did you successfully resolve the conflict? Delete '{conflict_path.name}'? (y/N): "
+                    )
+                    .strip()
+                    .lower()
+                )
+                if ans_del == "y":
                     conflict_path.unlink()
                     print("    [SUCCESS] Deleted conflict file.")
-        
+
         # Fallback to standard empty-base git merge if visual launch failed
         if not tool_launched:
             run_git_empty_fallback(current_file, conflict_path)
@@ -252,13 +302,13 @@ def merge_conflict(sync_root, conflict_path, tool):
 def main():
     sync_root = Path(os.getcwd())
     exclude_dirs = {".stversions", ".git"}
-    
+
     # Detect the preferred merge tool
     tool = detect_preferred_tool()
 
     print(f"Scanning for Syncthing conflicts in: {sync_root}")
     print(f"Preferred visual merge tool: {tool.upper()}")
-    
+
     conflict_files = []
 
     for root, dirs, files in os.walk(sync_root):
@@ -277,4 +327,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()   main()
+    main()
