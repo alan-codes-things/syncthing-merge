@@ -8,3 +8,10 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Tool caches
+.ruff_cache/
+.pytest_cache/
+
+# Default syncthing-merge backup directory when run inside the project
+.syncthing-merge-backups/
